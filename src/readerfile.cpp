@@ -6,6 +6,7 @@
 #include <sstream>
 #include <vector>
 #include <cmath>
+#include <ros/console.h>
 
 
 void lecturaF1(void);
@@ -20,6 +21,8 @@ using namespace std;
 #define overflow2 65536.00000l
 #define PI 3.141617l
 #define ladoCuadrado 2.000000l
+#define cl 0.61612l
+#define cr 6.49224l
 
 vector<long int> encoderDerechoF1,encoderIzquierdoF1;
 vector<long int> d1dF1,d1iF1,d2dF1,d2iF1;
@@ -124,6 +127,8 @@ int main(int argc, char **argv)
         {
             visualization_msgs::Marker line_strip;
             visualization_msgs::Marker line_strip2;
+            visualization_msgs::Marker gravityCenter;
+            visualization_msgs::Marker gravityCenter2;
 
             line_strip.header.frame_id    = "/waypoints";
             line_strip.header.stamp       = ros::Time::now();
@@ -151,16 +156,78 @@ int main(int argc, char **argv)
             line_strip2.color.r            = 1.0;
             line_strip2.color.a            = 1.0;
             
+            gravityCenter.header.frame_id    = "/waypoints";
+            gravityCenter.header.stamp       = ros::Time::now();
+            gravityCenter.ns                 = "points_and_lines2";
+            gravityCenter.action             = visualization_msgs::Marker::ADD;
+            gravityCenter.pose.orientation.x = 0;
+            gravityCenter.pose.orientation.y = 0;
+            gravityCenter.pose.orientation.z = 0;
+            gravityCenter.pose.orientation.w = 1.0;
+
+            gravityCenter.id                 = 1;
+            gravityCenter.type               = visualization_msgs::Marker::CUBE;
+            gravityCenter.scale.x            = 0.2;
+            gravityCenter.scale.y            = -0.2;
+            gravityCenter.scale.z            = 1;
+
+            gravityCenter.color.r            = 1.0;
+            gravityCenter.color.b            = 1.0;
+            gravityCenter.color.a            = 1.0;
+            gravityCenter.lifetime           = ros::Duration();
+
+            gravityCenter2.header.frame_id    = "/waypoints";
+            gravityCenter2.header.stamp       = ros::Time::now();
+            gravityCenter2.ns                 = "points_and_lines3";
+            gravityCenter2.action             = visualization_msgs::Marker::ADD;
+            gravityCenter2.pose.orientation.x = 0;
+            gravityCenter2.pose.orientation.y = 0;
+            gravityCenter2.pose.orientation.z = 1;
+            gravityCenter2.pose.orientation.w = 1.0;
+
+            gravityCenter2.id                 = 1;
+            gravityCenter2.type               = visualization_msgs::Marker::CUBE;
+            gravityCenter2.scale.x            = 0.2;
+            gravityCenter2.scale.y            = 0.2;
+            gravityCenter2.scale.z            = 1;
+
+            gravityCenter2.color.r            = 1.0;
+            gravityCenter2.color.b            = 0.5;
+            gravityCenter2.color.a            = 1.0;
+            gravityCenter2.lifetime           = ros::Duration();
+
+
+            int xauxG=0,yauxG=0,ng=0;
+            int xauxG2=0,yauxG2=0;
+            double alpha=0,beta=0;
+            geometry_msgs::Point pg;
+            double RadioTrajectoria =0;
+            double ErrorDiametro =0;
+            double cl_,cr_,eb_,dist_rodas_;
+
             for (uint32_t i = 0; i < xF1.size(); ++i)
             {
+                
                 geometry_msgs::Point p;
 
                 p.x = xF1[i];
                 p.y = yF1[i];
                 p.z = 0;
-
+                xauxG+=xF1[i];
+                yauxG+=yF1[i];
+                ng++;
                 line_strip.points.push_back(p);
-            }  
+                //ROS_INFO("%i %i %i",xauxG,yauxG,ng);
+            }
+            pg.x = xauxG/ng;
+            pg.y = yauxG/ng;
+            pg.z = 0;
+            
+            ng=0;
+            gravityCenter.points.push_back(pg); 
+            
+            //cout << pg.x << " " << pg.y << " \n";
+            
             for (uint32_t i = 0; i < xF2.size(); ++i)
             {
                 geometry_msgs::Point q;
@@ -169,11 +236,38 @@ int main(int argc, char **argv)
                 q.z = 0;
                // ROS_INFO("%.6f ",xF2[i]);
                 line_strip2.points.push_back(q);
+                xauxG2+=xF2[i];
+                yauxG2+=yF2[i];
+                ng++;
             } 
+            pg.x = xauxG2/ng;
+            pg.y = yauxG2/ng;
+            pg.z = 0;
+            
+            alpha = (xauxG + xauxG2)/(-4*ladoCuadrado);
+            beta  = (xauxG - xauxG2)/(-4*ladoCuadrado);
+            ROS_INFO_ONCE("ALPHA= %.5f Beta=%.5f",alpha,beta);
+            RadioTrajectoria = (ladoCuadrado/2)/(sin(beta/2));
+            ErrorDiametro = ((RadioTrajectoria + dist_rodas)/2)/((RadioTrajectoria - dist_rodas)/2);
+            cl_ = 2/(ErrorDiametro + 1);
+            cr_ = 2/(1/(ErrorDiametro + 1));
+            eb_=(PI/2)/((PI/2)-alpha);
+            dist_rodas_ = eb_ * dist_rodas;
+
+            ROS_INFO_ONCE("CL= %.5f   CR= %.5f EB= %.5f  Dist_rodas= %.5f",cl_,cr_,eb_,dist_rodas_);
+
+            xauxG = 0;
+            yauxG = 0;
+            xauxG = 0;
+            yauxG = 0;
+            ng=0;
+            gravityCenter2.points.push_back(pg);
+
 
             marker_pub.publish(line_strip);
             marker_pub.publish(line_strip2);
-
+            marker_pub.publish(gravityCenter);
+            marker_pub.publish(gravityCenter2);
             r.sleep();
         }
  
@@ -215,13 +309,13 @@ void lecturaF1(void)
     for(int i=0; i<d2dF1.size(); i++)
     {
         double velocidad;
-        velocidad = (2.000000)*PI*radio*(d2dF1[i]/(double)CPR); // distancia 
+        velocidad = ((2.000000)*PI*radio*(d2dF1[i]/(double)CPR));//*cr; // distancia 
         velocidadDF1.push_back(velocidad);
     }
     for(int i=0; i<d2iF1.size(); i++)
     {
         double velocidad;
-        velocidad = (2.000000)*PI*radio*(d2iF1[i]/(double)CPR);
+        velocidad = ((2.000000)*PI*radio*(d2iF1[i]/(double)CPR));//*cl;
         velocidadIF1.push_back(velocidad);
     }
     for(int i=0; i<velocidadIF1.size(); i++)
@@ -298,13 +392,13 @@ void lecturaF2(void)
     for(int i=0; i<d2dF2.size(); i++)
     {
         double velocidad;
-        velocidad = (2.000000)*PI*radio*(d2dF2[i]/(double)CPR); // distancia 
+        velocidad = ((2.000000)*PI*radio*(d2dF2[i]/(double)CPR));//*cr; // distancia 
         velocidadDF2.push_back(velocidad);
     }
     for(int i=0; i<d2iF2.size(); i++)
     {
         double velocidad;
-        velocidad = (2.000000)*PI*radio*(d2iF2[i]/(double)CPR);
+        velocidad = ((2.000000)*PI*radio*(d2iF2[i]/(double)CPR));//*cl;
         velocidadIF2.push_back(velocidad);
     }
     for(int i=0; i<velocidadIF2.size(); i++)

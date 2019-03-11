@@ -116,9 +116,9 @@ int main(int argc, char **argv)
             }
             logfile2.close();
         }
-      //  ROS_INFO("ARCHIVO 1");
+         ROS_INFO("ARCHIVO 1");
         lecturaF1();
-       
+       ROS_INFO("ARCHIVO 2");
         lecturaF2();
 
         //cout << suma_ << "\n";
@@ -217,7 +217,7 @@ int main(int argc, char **argv)
                 yauxG+=yF1[i];
                 ng++;
                 line_strip.points.push_back(p);
-                //ROS_INFO("%i %i %i",xauxG,yauxG,ng);
+                ROS_INFO("%i %i %i",xauxG,yauxG,ng);
             }
             pg.x = xauxG/ng;
             pg.y = yauxG/ng;
@@ -289,7 +289,7 @@ void lecturaF1(void)
         d1iF1.push_back(aux_numberF1);
     } 
     
-    for(int i=0; i<encoderDerechoF1.size(); i++)
+    for(int i=0; i<d1dF1.size(); i++)
     {
         double aux1,aux2,aux3;
         aux1 = (d1dF1[i] > overflow) ? 1 : 0;
@@ -297,7 +297,7 @@ void lecturaF1(void)
         aux3 = d1dF1[i] - ((aux1)*overflow2) + ((aux2)*overflow2);
         d2dF1.push_back(aux3);
     }
-    for(int i=0; i<encoderIzquierdoF1.size(); i++)
+    for(int i=0; i<d1iF1.size(); i++)
     {
         double aux1,aux2,aux3;
         aux1 = (d1iF1[i] > overflow) ? 1 : 0;
@@ -372,7 +372,7 @@ void lecturaF2(void)
         d1iF2.push_back(aux_numberF2);
     } 
     
-    for(int i=0; i<encoderDerechoF2.size(); i++)
+    for(int i=0; i<d1dF2.size(); i++)
     {
         double aux1,aux2,aux3;
         aux1 = (d1dF2[i] > overflow) ? 1 : 0;
@@ -380,7 +380,7 @@ void lecturaF2(void)
         aux3 = d1dF2[i] - ((aux1)*overflow2) + ((aux2)*overflow2);
         d2dF2.push_back(aux3); 
     }
-    for(int i=0; i<encoderIzquierdoF2.size(); i++)
+    for(int i=0; i<d1iF2.size(); i++)
     {
         double aux1,aux2,aux3;
         aux1 = (d1iF2[i] > overflow) ? 1 : 0;
@@ -439,5 +439,5 @@ void lecturaF2(void)
         yAuxF2 = valueY;
         //cout << valueX << " " << xAuxF1 << " " << valueY << " " << yAuxF1 <<"\n";
     }  
-    //ROS_INFO("ACABA ARCHIVO 1"); 
+    ROS_INFO("ACABA ARCHIVO 1"); 
 }
